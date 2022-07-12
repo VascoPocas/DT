@@ -1,0 +1,78 @@
+{
+    "$schema": "nao sei o que meter aqui",
+    "$id": "idqql",
+    "title":"Ontology Equipments",
+    "description" : "Equipments schema",
+    "urlAPI" : "",
+    "type" : "object",
+    "properties" : {
+        "equipmentId": {
+            "description": "The unique identifier for the equipment",
+            "type":"integer",
+            "name_column": "equipmentId"
+        },
+        "posX" : {
+            "description":"Position X relative to the plane",
+            "type":"number",
+            "name_column": "equipmentPositionX"
+        },
+        "posY" : {
+            "description" : "Position Y relative to the plane",
+            "type": "number",
+            "name_column": "equipmentPositionY"
+        },
+        "posZ" : {
+            "description" : "Position Y relative to the plane",
+            "type": "number",
+            "name_column": "equipmentPositionZ"
+        },
+        "direction" : {
+            "description" : "Describes the direction of the equipment",
+            "type": "number",
+            "name_column": "equipmentDirection"
+        },
+        "name": {
+            "description":"Describes the name of the equipment",
+            "type":"string",
+            "name_column": "equipmentName"
+        },
+        "seriesNumber" : {
+            "description" : "Describes the series number of the equipment",
+            "type" : "string",
+            "name_column": "equipmentSeriesNumber"
+        },
+        "model" : {
+            "description" : "Describes the 3D model of the equipment",
+            "type" : "object",
+            "name_column": "equipmentModel"
+        },
+        "status" : {
+            "description" : "Describes the actual state of the equipment",
+            "type" : "string",
+            "name_column": "equipmentStatus"
+        },
+        "brand" : {
+            "description" : "Describes the brand of the equipment",
+            "type" : "string",
+            "name_column": "equipmentBrand"
+        },
+        "manufacturer" : {
+            "description" : "Describes the manufacturer of the equipment",
+            "type" : "string",
+            "name_column": "equipmentManufacturer"
+        },
+        "weight" : {
+            "description" : "Describes the weight of the equipment",
+            "type" : "number",
+            "minimum": 0,
+            "name_column": "equipmentWeight"
+        },
+        "height" : {
+            "description" : "Describes the height of the equipment",
+            "type": "number",
+            "minimum": 0,
+            "name_column": "equipmentHeight"
+        }
+    },
+    "required" : ["equipmentId","posX","posY","posZ","name","seriesNumber","model", "status","brand","manufacturer","weight","height"]
+}

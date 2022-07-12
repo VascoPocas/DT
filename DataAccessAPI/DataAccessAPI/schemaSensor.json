@@ -1,0 +1,46 @@
+{
+    "$schema": "nao sei o que meter aqui",
+    "$id": "idqql",
+    "title":"Ontology sensor",
+    "description" : "sensor schema",
+    "urlAPI" : "",
+    "type" : "object",
+    "properties" : {
+        "sensorId": {
+            "description": "The unique identifier for the sensor",
+            "type":"integer",
+            "name_column": "sensorId"
+        },
+        "name": {
+            "description":"Describes the name of the sensor",
+            "type":"string",
+            "name_column": "sensorName"
+        },
+        "seriesNumber" : {
+            "description" : "Describes the series number of the sensor",
+            "type" : "string",
+            "name_column": "sensorSeriesNumber"
+        },
+        "manufacturer" : {
+            "description" : "Describes the manufacturer of the sensor",
+            "type" : "string",
+            "name_column": "sensorManufacturer"
+        },
+        "consumption" : {
+            "description" : "Describes the consumption of the sensor",
+            "type" : "number",
+            "name_column": "sensorConsumption"
+        },
+        "precision" : {
+            "description" : "Describes the precision of the sensor",
+            "type" : "number",
+            "name_column": "sensorPrecision"
+        },
+        "type" : {
+            "description" : "Describes the type of the sensor",
+            "type" : "string",
+            "name_column": "sensorType"
+        }
+    },
+    "required" : ["sensorId","name","seriesNumber","manufacturer", "consumption","precision","type"]
+}

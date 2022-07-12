@@ -1,0 +1,38 @@
+{
+    "$schema": "nao sei o que meter aqui",
+    "$id": "/facility",
+    "title":"Ontology",
+    "description" : "Facility schema",
+    "urlAPI":"",
+    "type" : "object",
+    "properties" : {
+        "faciltyId": {
+            "description": "The unique identifier for the facility",
+            "type":"integer",
+            "name_column": "facilityId"
+        },
+        "posX" : {
+            "description":"Position X relative to the plane",
+            "type":"number",
+            "name_column": "facilityPosX"
+        },
+        "posY" : {
+            "description" : "Position Y relative to the plane",
+            "type": "number",
+            "name_column": "facilityPosY"
+        },
+        "posZ" : {
+            "description" : "Position Y relative to the plane",
+            "type": "number",
+            "name_column": "facilityPosZ"
+        },
+        "polygon" : {
+            "description" : "Polygon that describes the facility",
+            "type": "object",
+            "name_column": "facilityPolygon"
+        }
+
+
+    },
+    "required" : ["facilityId","posX","posY","posZ","polygon"]
+}

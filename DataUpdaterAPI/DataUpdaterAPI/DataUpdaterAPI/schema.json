@@ -1,0 +1,21 @@
+{
+    "$schema": "nao sei o que meter aqui",
+    "$id": "idqql",
+    "title":"Data",
+    "description" : "Sensor Data schema",
+    "urlAPI":"",
+    "type" : "object",
+    "properties" : {
+        "Timestamp": {
+            "description": "The timestamp that the data of the sensor was taken",
+            "type":"string",
+            "name_column": ""
+        },
+        "value" : {
+            "description":"Value of the data taken",
+            "type":"number",
+            "name_column": "facilityPosX"
+        }
+    },
+    "required" : ["Timestamp","value"]
+}

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Factory Machine
+* source:	https://sketchfab.com/3d-models/factory-machine-80c7d78147ed4af99e490e26adf3f76e
+* author:	Pixel (https://sketchfab.com/stefan.lengyel1)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Factory Machine" (https://sketchfab.com/3d-models/factory-machine-80c7d78147ed4af99e490e26adf3f76e) by Pixel (https://sketchfab.com/stefan.lengyel1) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
