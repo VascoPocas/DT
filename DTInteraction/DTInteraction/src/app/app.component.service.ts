@@ -34,9 +34,10 @@ import {
     Ray,
     PointerDragBehavior,
     PickingInfo,
-    Nullable} from '@babylonjs/core';
+    Nullable,
+    Tags} from '@babylonjs/core';
     import '@babylonjs/loaders';
-    import { AdvancedDynamicTexture, Button, Control, CylinderPanel, Grid, GUI3DManager, HolographicButton, HolographicSlate, Rectangle, Slider, StackPanel, TextBlock, TextWrapping } from '@babylonjs/gui';
+    import { AdvancedDynamicTexture, Button, Control, CylinderPanel, Grid, GUI3DManager, HolographicButton, HolographicSlate, Rectangle, Slider, StackPanel, StackPanel3D, TextBlock, TextWrapping } from '@babylonjs/gui';
     import { HttpClient } from '@angular/common/http';
 
 import { IDados } from './dados';
@@ -151,7 +152,6 @@ export class AppComponentService {
             controller.onMotionControllerInitObservable.add((motionController) => {
                 if (motionController.handness === 'left') {
                       const xr_ids = motionController.getComponentIds();
-                      console.log(xr_ids);
                       let triggerComponent = motionController.getComponent(xr_ids[0]);//xr-standard-trigger
                       triggerComponent.onButtonStateChangedObservable.add(() => {
                           if(triggerComponent.pressed){
@@ -189,12 +189,10 @@ export class AppComponentService {
           this.hit=  this.scene.pickWithRay(this.ray);
           if (this.hit!.pickedMesh && this.hit!.pickedMesh.name != "Material2") {
                 
-              console.log(this.hit!.pickedMesh);
-
               if(this.hit!.pickedMesh.metadata.type == "equipment"){
-                  this.createSlateMachine();
-              }else if (this.hit!.pickedMesh.metadata == "lote") {
-                window.alert("Lote");
+                this.createSlateMachine();
+              }else if (this.hit!.pickedMesh.metadata.type == "lote") {
+                this.createSlateLote();
               }    
               
             }
@@ -237,7 +235,7 @@ export class AppComponentService {
     this.navigationMenu(scene);
 
     this.camera.inputs.removeByType("FreeCameraKeyboardMoveInput");
-
+    this.camera.inputs.addMouseWheel(); 
     // Connect to camera:
     this.camera.inputs.add(new ICameraInput.FreeCameraKeyboardWalkInput);
             
@@ -275,7 +273,7 @@ export class AppComponentService {
         var button = Button.CreateSimpleButton("button_on_off", "OFF");
         button.width = 0.1;
         button.height = "40px";
-        button.color = "black";
+        button.color = "red";
         button.background = "transparent";
         button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
@@ -286,11 +284,11 @@ export class AppComponentService {
         panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         advancedTexture.addControl(panel);
-
+        panel.color="red";
         var header3 = new TextBlock();
         header3.text = "Axis X: 0 deg";
         header3.height = "30px";
-        header3.color = "black";
+        header3.color = "red";
         panel.addControl(header3);
 
         var slider3 = new Slider();
@@ -299,22 +297,20 @@ export class AppComponentService {
         slider3.value = 0;
         slider3.height = "20px";
         slider3.width = "200px";
-
-        var pval = 0;
+        slider3.color="red";
         slider3.onValueChangedObservable.add( (value) => {
-            //this.camera.setPivotMatrix(Matrix.Translation(2, 0, 0));
             header3.text = "Axis X: " + (Tools.ToDegrees(value) | 0) + " deg";
             if (this.camera) {
                 this.camera.rotation.x = value;
             }
-            pval = value;
+            
         });
         panel.addControl(slider3);
 
         var button2 = Button.CreateSimpleButton("button_on_off", "OFF");
         button2.width = 0.1;
         button2.height = "40px";
-        button2.color = "black";
+        button2.color = "green";
         button2.background = "transparent";
         button2.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         button2.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
@@ -325,11 +321,11 @@ export class AppComponentService {
         panel2.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         panel2.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         advancedTexture.addControl(panel2);
-
+        panel2.color="green";
         var header2 = new TextBlock();
         header2.text = "Axis Y: 0 deg";
         header2.height = "30px";
-        header2.color = "black";
+        header2.color = "green";
         panel.addControl(header2);
 
         var slider2 = new Slider();
@@ -338,15 +334,12 @@ export class AppComponentService {
         slider2.value = 0;
         slider2.height = "20px";
         slider2.width = "200px";
-
-        var pval = 0;
+        slider2.color= "green";
         slider2.onValueChangedObservable.add( (value) => {
-            //this.camera.setPivotMatrix(Matrix.Translation(2, 0, 0));
             header2.text = "Axis Y: " + (Tools.ToDegrees(value) | 0) + " deg";
             if (this.camera) {
                 this.camera.rotation.y = value;
             }
-            pval = value;
         });
         panel.addControl(slider2);
 
@@ -354,7 +347,7 @@ export class AppComponentService {
         var button1 = Button.CreateSimpleButton("button_on_off", "OFF");
         button1.width = 0.1;
         button1.height = "40px";
-        button1.color = "black";
+        button1.color = "blue";
         button1.background = "transparent";
         button1.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         button1.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
@@ -362,6 +355,7 @@ export class AppComponentService {
         
         var panel1 = new StackPanel();
         panel1.width = "220px";
+        panel.color= "blue";
         panel1.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         panel1.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         advancedTexture.addControl(panel1);
@@ -369,7 +363,7 @@ export class AppComponentService {
         var header1 = new TextBlock();
         header1.text = "Axis Z: 0 deg";
         header1.height = "30px";
-        header1.color = "black";
+        header1.color = "blue";
         panel.addControl(header1);
 
         var slider1 = new Slider();
@@ -378,15 +372,14 @@ export class AppComponentService {
         slider1.value = 0;
         slider1.height = "20px";
         slider1.width = "200px";
+        slider1.color = "blue";
 
-        var pval = 0;
+        
         slider1.onValueChangedObservable.add( (value) => {
-            //this.camera.setPivotMatrix(Matrix.Translation(2, 0, 0));
             header1.text = "Axis Z: " + (Tools.ToDegrees(value) | 0) + " deg";
             if (this.camera) {
                 this.camera.rotation.z = value;
             }
-            pval = value;
         });
         panel.addControl(slider1);
           
@@ -523,41 +516,34 @@ export class AppComponentService {
         const  meshes  = await SceneLoader.ImportMeshAsync("","../assets/models/ventis_3015_aj/","scene.gltf",scene);
         
         //ALL objects 
-        meshes.meshes[0].getChildMeshes().forEach( m => m.id = numb.equipmentId.toString())
+        meshes.meshes[0].getChildMeshes().forEach( m => { m.id = numb.equipmentId.toString();
+                                                    m.metadata = {type:"equipment", x: numb.posX, y:numb.posY,z:numb.posZ}; });
         
-        var route = meshes.meshes[0];
-        route.scaling = new Vector3(.03,.03,.03);
+        //var route= meshes.meshes[0].clone("equip",null);
+        meshes.meshes[0].scaling = new Vector3(.03,.03,.03);
         this.datasERP.forEach( element => {
           if (element.equipmentId == numb.equipmentId.toString()) {
-            route.setAbsolutePosition(new Vector3(element.equipmentPositionX,element.equipmentPositionY,element.equipmentPositionZ));
-            route.name = element.equipmentName;
+            meshes.meshes[0].setAbsolutePosition(new Vector3(element.equipmentPositionX,element.equipmentPositionY,element.equipmentPositionZ));
+            meshes.meshes[0].name = element.equipmentName;
           }
         })
-        route.metadata ={type : "equipment"};
         
-        route.isPickable= true;
+
+        meshes.meshes[0].isPickable= true;
+        
         
         if(numb.direction != null){
         var rotation = Angle.FromDegrees(numb.direction).radians();
-          route.rotate(new Vector3(0,1,0),rotation,Space.LOCAL);
+        meshes.meshes[0].rotate(new Vector3(0,1,0),rotation,Space.LOCAL);
         } 
         
-       // this.createSlateMachine();
+       
 
 
     }
 
 
     createSlateMachine() : void {
-
-      this.scene.onPointerDown = async (evt) =>{
-
-        this.ray = this.scene.createPickingRay( this.scene.pointerX, this.scene.pointerY, Matrix.Identity(), this.camera);
-        this.hit=  this.scene.pickWithRay(this.ray);
-        if (this.hit!.pickedMesh && this.hit!.pickedMesh.name != "Material2") {
-              
-            console.log(this.hit!.pickedMesh);
-
 
             this.data.forEach(async element => {
                 
@@ -580,7 +566,7 @@ export class AppComponentService {
                   this.bioSlate.resetDefaultAspectAndPose(true);
                   this.manager.addControl(this.bioSlate);
                   this.bioSlate.dimensions = new Vector2(100, 100);
-                  this.bioSlate.position = new Vector3(this.hit!.pickedMesh.absolutePosition._x,this.hit!.pickedMesh.absolutePosition._y + 180, this.hit!.pickedMesh.absolutePosition._z);
+                  this.bioSlate.position = new Vector3(this.hit!.pickedMesh.metadata.x,this.hit!.pickedMesh.metadata.y + 180, this.hit!.pickedMesh.metadata.z);
                   this.bioSlate.title = "Machine Information";
                   this.bioSlate.titleBarHeight = 1.5;
                   this.camera.setTarget(this.bioSlate.position);
@@ -598,7 +584,6 @@ export class AppComponentService {
                   bioText.text = element.name;
 
                   bioGrid.addControl(bioText);
-                  console.log(element);
                   for (let index = 6 ; index < element.columns.length; index++){
                     const info = element.columns[index];
                     bioText = new TextBlock("bioText");
@@ -643,8 +628,6 @@ export class AppComponentService {
                 }
             });              
             
-          }
-      }
     }
     
     async createLote(numb : IDadosLoteDB) {
@@ -652,7 +635,8 @@ export class AppComponentService {
       const  meshes  = await SceneLoader.ImportMeshAsync("","../assets/models/cargo_crate/","scene.gltf",this.scene);
 
       //ALL objects  
-      meshes.meshes[0].getChildMeshes().forEach( m => m.id = numb.art_codigo.toString())
+      meshes.meshes[0].getChildMeshes().forEach( m => { m.id = numb.art_codigo.toString();
+                                                  m.metadata = {type:"lote", x: numb.arm_loc_pos_x, y:numb.arm_loc_pos_y,z:numb.arm_loc_pos_z};  });
 
       
       var route = meshes.meshes[0];
@@ -668,7 +652,94 @@ export class AppComponentService {
 
     }
 
-    
+
+    createSlateLote() : void {
+
+        
+        
+          if (this.hit!.pickedMesh && this.hit!.pickedMesh.name != "Material2") {
+        
+            this.dataLoteDB.forEach(async element => {
+                
+                if(element.art_codigo.toString() == this.hit!.pickedMesh?.id && this.isPicked != this.hit!.pickedMesh?.id){
+
+                  
+                  this.isPicked = this.hit!.pickedMesh?.id;
+                  // resets the rotation and aspect of the slate so it can be right in front of the camera
+                  if(this.bioSlate.node == null){
+                    this.bioSlate = new HolographicSlate("bioSlate");
+                    
+                  }
+
+                  var shown;
+
+                  this.bioSlate.resetDefaultAspectAndPose(true);
+                  this.manager.addControl(this.bioSlate);
+                  this.bioSlate.dimensions = new Vector2(100, 100);
+                  this.bioSlate.position = new Vector3(this.hit!.pickedMesh.metadata.x,this.hit!.pickedMesh.metadata.y + 180, this.hit!.pickedMesh.metadata.z);
+                  this.bioSlate.title = "Lote Information";
+                  this.bioSlate.titleBarHeight = 1.5;
+                  this.camera.setTarget(new Vector3(this.hit!.pickedMesh.position.x,this.hit!.pickedMesh.position.y+ 100,this.hit!.pickedMesh.position.z));
+
+                  var bioGrid = new Grid("bioGrid");
+                  var bioText = new TextBlock("bioText");
+                  bioText.width = 1;
+                  bioText.height = 0.2;
+                  bioText.color = "white";
+                  bioText.textWrapping = TextWrapping.WordWrap;
+                  bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+                  bioText.setPadding("0%", "5%", "0%", "0%");
+                  bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+                  bioText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+                  bioText.text = element.art_descritivo;
+
+                  bioGrid.addControl(bioText);
+                  
+                  for (let index = 0 ; index < element.columns.length; index++){
+                    const info = element.columns[index];
+                    bioText = new TextBlock("bioText");
+                    bioText.width = 0.4;
+                    bioText.height = 0.1;
+                    bioText.color = "white";
+                    bioText.textWrapping = TextWrapping.WordWrap;
+                    bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+                    bioText.setPadding("0%", "5%", "0%", "5%");
+                    bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+                    bioText.top = -150 + (index) * 50;
+                    bioText.text = info + ":";
+
+                    bioGrid.addControl(bioText);
+
+                    bioText = new TextBlock("bioText");
+                    bioText.width = 0.6;
+                    bioText.height = 0.1;
+                    bioText.color = "white";
+                    bioText.textWrapping = TextWrapping.WordWrap;
+                    bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+                    bioText.setPadding("0%", "5%", "0%", "0%");
+                    bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+                    bioText.top =-150 + (index) * 50;
+                    //bioText.text = shown[index].toString();
+                    
+                    bioGrid.addControl(bioText);
+                  }
+                  
+                  bioGrid.background = "#000080";
+                  
+                  this.bioSlate.content = bioGrid;
+                  this.bioSlate._contentMaterial.alpha = 0.5;
+                  
+                  
+                  
+                }else if (element.art_codigo.toString() == this.hit!.pickedMesh?.id && this.isPicked == this.hit!.pickedMesh?.id){
+                  
+                  this.isPicked="";
+                  this.bioSlate.dispose();
+                }
+            });              
+            
+          }
   
   }
-  
+
+}
