@@ -35,6 +35,7 @@ import { IDadosLote } from './dadosLote';
 import { IDadosLoteDB } from './IDadosLotesDB';
 import { IDadosEmployee } from './dataEmployee';
 import * as echarts from 'echarts';
+import { IDadosSensors } from './dadosSensors';
 
 
 const  echartsScript = document.createElement("script"); 
@@ -71,6 +72,12 @@ export class AppComponentService {
   ray!: Ray;
   hit!: Nullable<PickingInfo>;
   lastMachine!: Nullable<AbstractMesh>;
+  dataChart: number[] = [];
+  timeChart: string[] = [];
+  dadosSensores!: IDadosSensors[];
+  min = Number.MAX_SAFE_INTEGER;
+  max = Number.MIN_SAFE_INTEGER;
+  avg = 0;
  
   
 
@@ -92,12 +99,13 @@ this.engine = new Engine(this.canvas, true, {
 
 
 
-async startAll(dados: IDados[], dadosERP: IDadosERP[], dadosLote : IDadosLote[], dadosLoteDb : IDadosLoteDB[],dadosEmp : IDadosEmployee[]){
+async startAll(dados: IDados[], dadosERP: IDadosERP[], dadosLote : IDadosLote[], dadosLoteDb : IDadosLoteDB[],dadosEmp : IDadosEmployee[], dadosSensors : IDadosSensors[]){
 this.data=dados;
 this.datasERP = dadosERP;
 this.dataLote = dadosLote;
 this.dataLoteDB = dadosLoteDb;
 this.dataEmployee = dadosEmp;
+this.dadosSensores = dadosSensors;
 this.scene = this.createScene(this.canvas);
 this.scene2 = this.createAxis();
 
@@ -504,6 +512,11 @@ dataERPEmployee() :Observable<IDadosEmployee[]>{
   
 }
 
+dataSensors() :Observable<IDadosSensors[]>{
+  return this.http.get<IDadosSensors[]>('https://cft52.sistrade.com/api//Sensors?dataInicio=07-19-2022":14:00').pipe(tap(data => console.log('All' + JSON.stringify(data))));
+  
+}
+
 
  async createWarehouse(scene : Scene): Promise<void> {
 
@@ -802,7 +815,6 @@ createSlateEmployee() {
           this.manager.addControl(this.bioSlate);
           this.bioSlate.dimensions = new Vector2(100, 100);
           this.bioSlate.position = new Vector3(this.hit!.pickedMesh.metadata.x,Number.parseInt(this.hit!.pickedMesh.metadata.y) + 100, this.hit!.pickedMesh.metadata.z);
-          console.log(this.bioSlate.position);
           this.bioSlate.title = "Employee Information";
           this.bioSlate.titleBarHeight = 1.5;
           this.camera.setTarget(new Vector3(this.hit!.pickedMesh.position.x,this.hit!.pickedMesh.position.y+ 100,this.hit!.pickedMesh.position.z)); 
@@ -941,7 +953,9 @@ bioGrid.addControl(bioBtn);
 }
 
 createDataChart(bioGrid : Grid) {
-
+this.bioSlate.dimensions = new Vector2(200,200);
+this.bioSlate.position.y+=100;
+this.bioSlate.content = bioGrid;
 var element!: IDados;
 this.data.forEach(elem => {
   if(elem.equipmentId.toString() == this.lastMachine?.id){
@@ -963,28 +977,43 @@ textMachine.text = "Equipment: " + element.name;
 bioGrid.addControl(textMachine);
 
 
+this.createChart(bioGrid);
+
 
 
 var textChart = new TextBlock("textDataChart");
 textChart.width = 1;
 textChart.height = 1;
-textChart.fontSize = 26;
+textChart.fontSize = 22;
 textChart.color = "black";
 textChart.textWrapping = TextWrapping.WordWrap;
 textChart.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 textChart.setPadding("0%", "0%", "0%", "5%");
 textChart.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 textChart.top = -100;
-textChart.text = "Min: 30ºC         Max: 46ºC       Avg: 36ºC";
+textChart.text = "Min: "+this.min+"ºC         Max: "+ this.max +"ºC       Avg: "+this.avg.toFixed(2)+"ºC";
 bioGrid.addControl(textChart);
 
 
-this.createChart(bioGrid);
+
 }
 
 
 
 createChart(bioGrid: Grid){
+  this.dadosSensores.forEach(elements => {
+    
+    this.timeChart.push(elements.timestamp);
+    this.dataChart.push(elements.value);
+    if(this.max < elements.value){
+      this.max = elements.value;
+    }
+    if(this.min > elements.value){
+      this.min = elements.value;
+    }
+    this.avg = this.avg + elements.value;
+  })
+  this.avg = this.avg/ this.dadosSensores.length;
   var dataUrl;
   var plane = CreatePlane("plane", {width: 6, height: 6}, this.scene);
   plane.position = new Vector3(this.bioSlate.position.x, this.bioSlate.position.y,this.bioSlate.position.z);
@@ -1001,24 +1030,20 @@ createChart(bioGrid: Grid){
 
     // Specify the configuration items and data for the chart
     var option = {
-        title: {
-        text: 'ECharts Getting Started Example'
-        },
-        tooltip: {},
-        legend: {
-        data: ['sales']
-        },
-        xAxis: {
-        data: ['Shirts', 'Cardigans', 'Chiffons', 'Pants', 'Heels', 'Socks']
-        },
-        yAxis: {},
-        series: [
+      xAxis: {
+        type: 'category',
+        data: this.timeChart
+      },
+      yAxis: {
+        type: 'value'
+      },
+      series: [
         {
-            name: 'sales',
-            type: 'bar',
-            data: [5, 20, 36, 10, 10, 20]
+          data: this.dataChart,
+          type: 'line',
+          smooth: true
         }
-        ]
+      ]
     };
 
     // Display the chart using the configuration items and data just specified.
@@ -1033,13 +1058,15 @@ createChart(bioGrid: Grid){
         const echartsMaterial = new StandardMaterial("echartsMaterial", this.scene);
         echartsMaterial.emissiveTexture = echartsTexture;
         plane.material = echartsMaterial;
-        this.engine.hideLoadingUI();
-        dataUrl = echartsCanvas.toDataURL();
+       
+        dataUrl = echartsCanvas.toDataURL("image/jpeg",1);
+        console.log(dataUrl);
         var img = new Image("img",dataUrl);
         img.height = 0.6;
-        img.alpha= 1;
+        
         img.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         bioGrid.addControl(img);
+        
     });
 
 }
