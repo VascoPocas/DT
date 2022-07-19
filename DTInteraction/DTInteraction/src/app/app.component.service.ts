@@ -4,50 +4,37 @@ import {
     SceneLoader,
     MeshBuilder,
     Color3,
-    Color4,
     HemisphericLight,
-    FreeCamera,
     ArcRotateCamera,
     Tools,
-    Mesh,
     Matrix,
-    Camera,
-    ThinMaterialHelper,
-    WebXRState,
-    StandardMaterial,
-    WebXRFeatureName,
     int,
     AbstractMesh,
     UniversalCamera,
     WebXRDefaultExperience,
-    WebXRExperienceHelper,
-    WebXRSessionManager,
     Angle,
     Space,
     Vector2,
-    FollowBehavior,
     Animatable,
-    BabylonFileLoaderConfiguration,
-    ActionManager,
-    PointerEventTypes,
-    Axis,
     Ray,
-    PointerDragBehavior,
     PickingInfo,
     Nullable,
-    Tags} from '@babylonjs/core';
+    DynamicTexture,
+    StandardMaterial,
+    CreatePlane} from '@babylonjs/core';
     import '@babylonjs/loaders';
-    import { AdvancedDynamicTexture, Button, Control, CylinderPanel, Grid, GUI3DManager, HolographicButton, HolographicSlate, Rectangle, Slider, StackPanel, StackPanel3D, TextBlock, TextWrapping } from '@babylonjs/gui';
+    import { AdvancedDynamicTexture, Button, Control, Grid, GUI3DManager, HolographicSlate, Slider, StackPanel, TextBlock, TextWrapping } from '@babylonjs/gui';
     import { HttpClient } from '@angular/common/http';
 
 import { IDados } from './dados';
 import { Observable } from 'rxjs';
-import { catchError, tap, map, elementAt } from 'rxjs/operators';
+import { tap } from 'rxjs/operators';
 import { IDadosERP } from './dadosERP';
 import  * as ICameraInput from './CameraInputs';
-import { ThisReceiver } from '@angular/compiler';
 import { IDadosLote } from './dadosLote';
 import { IDadosLoteDB } from './IDadosLotesDB';
+import { IDadosEmployee } from './dataEmployee';
+import * as echarts from 'echarts';
  
   
   
@@ -68,7 +55,7 @@ export class AppComponentService {
     manager!: GUI3DManager;
     bioSlate!: HolographicSlate;
     xrPromise!: WebXRDefaultExperience;
-    isPicked: string = "";
+    isPicked: string | undefined = "";
     AnimationMeshes!: Animatable[];
     logoMesh!: any;
     datasERP!: IDadosERP[];
@@ -79,11 +66,17 @@ export class AppComponentService {
     keysRight!: number[];
     sensibility!: number;
     dataLoteDB!: IDadosLoteDB[];
+    dataEmployee!: IDadosEmployee[];
     ray!: Ray;
     hit!: Nullable<PickingInfo>;
+    lastMachine!: Nullable<AbstractMesh>;
+    echartsScript: any;
 
   
     constructor(private http : HttpClient){
+      const echartsScript = document.createElement("script");
+      echartsScript.src = "https://cdn.jsdelivr.net/npm/echarts@5.3.3/dist/echarts.min.js";
+      document.head.appendChild(echartsScript);
     
       this.num=0;
   // Get the canvas DOM element
@@ -98,11 +91,12 @@ export class AppComponentService {
 
 }
 
-  async startAll(dados: IDados[], dadosERP: IDadosERP[], dadosLote : IDadosLote[], dadosLoteDb : IDadosLoteDB[]){
+  async startAll(dados: IDados[], dadosERP: IDadosERP[], dadosLote : IDadosLote[], dadosLoteDb : IDadosLoteDB[],dadosEmp : IDadosEmployee[]){
     this.data=dados;
     this.datasERP = dadosERP;
     this.dataLote = dadosLote;
     this.dataLoteDB = dadosLoteDb;
+    this.dataEmployee = dadosEmp;
     this.scene = this.createScene(this.canvas);
     this.scene2 = this.createAxis();
     
@@ -112,6 +106,9 @@ export class AppComponentService {
       }); 
       this.dataLoteDB.forEach( element => {
         this.createLote(element);
+      })
+      this.dataEmployee.forEach(element => {
+        this.createEmployee(element);
       })
       this.createWarehouse(this.scene);
 
@@ -190,7 +187,8 @@ export class AppComponentService {
           if (this.hit!.pickedMesh && this.hit!.pickedMesh.name != "Material2") {
                 
               if(this.hit!.pickedMesh.metadata.type == "equipment"){
-                this.createSlateMachine();
+                this.lastMachine = this.hit!.pickedMesh;
+                this.createSlateMachine(null);
               }else if (this.hit!.pickedMesh.metadata.type == "lote") {
                 this.createSlateLote();
               }    
@@ -495,6 +493,11 @@ export class AppComponentService {
       return this.http.get<IDadosLoteDB[]>('http://localhost:3000/api/sql/lotes').pipe(tap(data => console.log('All' + JSON.stringify(data))));
       
     }
+
+    dataERPEmployee() :Observable<IDadosEmployee[]>{
+      return this.http.get<IDadosEmployee[]>('https://cft52.sistrade.com/api/Employees').pipe(tap(data => console.log('All' + JSON.stringify(data))));
+      
+    }
    
     
      async createWarehouse(scene : Scene): Promise<void> {
@@ -543,18 +546,26 @@ export class AppComponentService {
     }
 
 
-    createSlateMachine() : void {
-
+    createSlateMachine(mesh : AbstractMesh | null) : void {
+      var hitMesh: Nullable<AbstractMesh>;
+            if (mesh != null) {
+              hitMesh = mesh;
+              this.isPicked = "";
+              
+            }else{
+              hitMesh  = this.hit!.pickedMesh;
+            }
+          
             this.data.forEach(async element => {
                 
-                if(element.equipmentId.toString() == this.hit!.pickedMesh?.id && this.isPicked != this.hit!.pickedMesh?.id){
-                  var x = this.scene.animationGroups[Number.parseInt(this.hit!.pickedMesh.id)-1].isStarted;
+                if(element.equipmentId.toString() == hitMesh!.id && this.isPicked != hitMesh!.id){
+                  
+                  var x = this.scene.animationGroups[Number.parseInt(hitMesh!.id)-1].isStarted;
                   if(x == true){
-                    this.scene.animationGroups[Number.parseInt(this.hit!.pickedMesh.id)-1].stop();
+                    this.scene.animationGroups[Number.parseInt(hitMesh!.id)-1].stop();
                   
                   }
                   
-                  this.isPicked = this.hit!.pickedMesh?.id;
                   // resets the rotation and aspect of the slate so it can be right in front of the camera
                   if(this.bioSlate.node == null){
                     this.bioSlate = new HolographicSlate("bioSlate");
@@ -566,22 +577,27 @@ export class AppComponentService {
                   this.bioSlate.resetDefaultAspectAndPose(true);
                   this.manager.addControl(this.bioSlate);
                   this.bioSlate.dimensions = new Vector2(100, 100);
-                  this.bioSlate.position = new Vector3(this.hit!.pickedMesh.metadata.x,this.hit!.pickedMesh.metadata.y + 180, this.hit!.pickedMesh.metadata.z);
+                  this.bioSlate.position = new Vector3(hitMesh!.metadata.x,hitMesh!.metadata.y + 180, hitMesh!.metadata.z);
                   this.bioSlate.title = "Machine Information";
                   this.bioSlate.titleBarHeight = 1.5;
                   this.camera.setTarget(this.bioSlate.position);
 
                   var bioGrid = new Grid("bioGrid");
+
+                  this.createButtons(bioGrid);
+                 
                   var bioText = new TextBlock("bioText");
                   bioText.width = 1;
                   bioText.height = 0.2;
+                  bioText.fontSize = 54;
                   bioText.color = "white";
                   bioText.textWrapping = TextWrapping.WordWrap;
                   bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
                   bioText.setPadding("0%", "5%", "0%", "0%");
-                  bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+                  bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
                   bioText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
                   bioText.text = element.name;
+                  bioText.top = 50;
 
                   bioGrid.addControl(bioText);
                   for (let index = 6 ; index < element.columns.length; index++){
@@ -591,10 +607,10 @@ export class AppComponentService {
                     bioText.height = 0.1;
                     bioText.color = "white";
                     bioText.textWrapping = TextWrapping.WordWrap;
-                    bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+                    bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
                     bioText.setPadding("0%", "5%", "0%", "5%");
                     bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-                    bioText.top = -150 + (index-6) * 50;
+                    bioText.top = -100 + (index-6) * 50;
                     bioText.text = info + ":";
 
                     bioGrid.addControl(bioText);
@@ -607,24 +623,26 @@ export class AppComponentService {
                     bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
                     bioText.setPadding("0%", "5%", "0%", "0%");
                     bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-                    bioText.top =-150 + (index-6) * 50;
+                    bioText.top = -100 + (index-6) * 50;
                     bioText.text = shown[index-6].toString();
                     
                     bioGrid.addControl(bioText);
                   }
                   
-                  bioGrid.background = "#000080";
-                  
+                  bioGrid.background = "#4e5159";
+                  this.bioSlate.mesh?.lookAt(new Vector3(this.camera.position.x,this.camera.position.y,this.camera.position.z));
+                  this.bioSlate.mesh?.addRotation(0,Math.PI,0);
                   this.bioSlate.content = bioGrid;
                   this.bioSlate._contentMaterial.alpha = 0.5;
                   
                   
+                  this.isPicked = hitMesh!.id;
                   
-                }else if (element.equipmentId.toString() == this.hit!.pickedMesh?.id && this.isPicked == this.hit!.pickedMesh?.id){
+                }else if (element.equipmentId.toString() == hitMesh!.id && this.isPicked == hitMesh!.id && mesh == null){
                   
                   this.isPicked="";
                   this.bioSlate.dispose();
-                  this.scene.animationGroups[Number.parseInt(this.hit!.pickedMesh.id)-1].play(true);
+                  this.scene.animationGroups[Number.parseInt(hitMesh!.id)-1].play(true);
                 }
             });              
             
@@ -671,7 +689,7 @@ export class AppComponentService {
                     
                   }
 
-                  var shown;
+                  var shown = [element.art_descritivo,element.arm_loc_pos_x,element.arm_loc_pos_y,element.arm_loc_pos_z];
 
                   this.bioSlate.resetDefaultAspectAndPose(true);
                   this.manager.addControl(this.bioSlate);
@@ -679,8 +697,7 @@ export class AppComponentService {
                   this.bioSlate.position = new Vector3(this.hit!.pickedMesh.metadata.x,this.hit!.pickedMesh.metadata.y + 180, this.hit!.pickedMesh.metadata.z);
                   this.bioSlate.title = "Lote Information";
                   this.bioSlate.titleBarHeight = 1.5;
-                  this.camera.setTarget(new Vector3(this.hit!.pickedMesh.position.x,this.hit!.pickedMesh.position.y+ 100,this.hit!.pickedMesh.position.z));
-
+                  this.camera.setTarget(new Vector3(this.hit!.pickedMesh.position.x,this.hit!.pickedMesh.position.y+ 100,this.hit!.pickedMesh.position.z)); 
                   var bioGrid = new Grid("bioGrid");
                   var bioText = new TextBlock("bioText");
                   bioText.width = 1;
@@ -695,7 +712,7 @@ export class AppComponentService {
 
                   bioGrid.addControl(bioText);
                   
-                  for (let index = 0 ; index < element.columns.length; index++){
+                  for (let index = 1 ; index < element.columns.length; index++){
                     const info = element.columns[index];
                     bioText = new TextBlock("bioText");
                     bioText.width = 0.4;
@@ -719,13 +736,13 @@ export class AppComponentService {
                     bioText.setPadding("0%", "5%", "0%", "0%");
                     bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
                     bioText.top =-150 + (index) * 50;
-                    //bioText.text = shown[index].toString();
+                    bioText.text = shown[index-1].toString();
                     
                     bioGrid.addControl(bioText);
                   }
                   
                   bioGrid.background = "#000080";
-                  
+                  this.bioSlate.mesh?.setDirection(new Vector3(-this.camera.position.x,-this.camera.position.y,-this.camera.position.z));
                   this.bioSlate.content = bioGrid;
                   this.bioSlate._contentMaterial.alpha = 0.5;
                   
@@ -740,6 +757,192 @@ export class AppComponentService {
             
           }
   
+  }
+
+  async createEmployee(numb : IDadosEmployee) {
+    //imports the equipments
+    const  meshes  = await SceneLoader.ImportMeshAsync("","../assets/models/black_uniform_woman_employee/","scene.gltf",this.scene);
+
+    //ALL objects  
+    meshes.meshes[0].getChildMeshes().forEach( m => { m.id = numb.em_codigo;
+                                                m.metadata = {type:"employee", x: numb.em_posx, y:numb.em_posy,z:numb.em_posz};  });
+
+    
+    var route = meshes.meshes[0];
+    route.scaling = new Vector3(50,70,50);
+    this.dataEmployee.forEach( element => {
+      if (element.em_codigo == numb.em_codigo) {
+        route.setAbsolutePosition(new Vector3(element.em_posx,element.em_posy-62,element.em_posz));
+        route.name = element.em_descritivo;
+      }
+    })
+    route.metadata = "employee";
+    route.isPickable= true;
+
+  }
+
+createButtons(bioGrid: Grid) {
+    var textButton = new TextBlock("textButton");
+    textButton.width = 1;
+    textButton.height = 1;
+    textButton.fontSize = 26;
+    textButton.color = "black";
+    textButton.textWrapping = TextWrapping.WordWrap;
+    textButton.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    textButton.setPadding("0%", "5%", "0%", "0%");
+    textButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    textButton.verticalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    textButton.text = "Information";
+
+
+    var bioButton = new Button("buttonInfo");
+    bioButton.addControl(textButton);
+    bioButton.width = 0.5;
+    bioButton.height = 0.1;
+    bioButton.color = "#4e5159";
+    bioButton.background = "#4e5159";
+    bioButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    bioButton.horizontalAlignment= Control.HORIZONTAL_ALIGNMENT_LEFT;
+    bioButton.onPointerClickObservable.add( () =>{
+        bioGrid.clearControls();
+        this.createSlateMachine(this.lastMachine);
+        bioGrid.background = "#4e5159";
+        
+    });
+
+  
+    bioGrid.addControl(bioButton);
+
+
+ 
+    var textButton1 = new TextBlock("textButton");
+    textButton1.width = 1;
+    textButton1.height = 1;
+    textButton1.fontSize = 26;
+    textButton1.color = "black";
+    textButton1.textWrapping = TextWrapping.WordWrap;
+    textButton1.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    textButton1.setPadding("0%", "5%", "0%", "0%");
+    textButton1.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    textButton1.verticalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    textButton1.text = "Data";
+    
+    var bioBtn = new Button("buttonData");
+    bioBtn.addControl(textButton1);
+    bioBtn.width = 0.5;
+    bioBtn.height = 0.1;
+    bioBtn.color = "orange";
+    bioBtn.background = "orange";
+    bioBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+    bioBtn.horizontalAlignment= Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    bioBtn.onPointerClickObservable.add( () =>{
+        //this.bioSlate.dimensions = new Vector2(100, 200);
+        bioGrid.clearControls();
+        
+        this.createDataChart(bioGrid);
+        this.createButtons(bioGrid);
+        bioGrid.background = "orange";
+
+    });
+    bioGrid.addControl(bioBtn);
+
+  }
+
+  createDataChart(bioGrid : Grid) {
+    
+    var element!: IDados;
+    this.data.forEach(elem => {
+      if(elem.equipmentId.toString() == this.lastMachine?.id){
+        element = elem;
+      }
+    })
+
+    var textMachine = new TextBlock("textDataChart");
+    textMachine.width = 1;
+    textMachine.height = 1;
+    textMachine.fontSize = 36;
+    textMachine.color = "black";
+    textMachine.textWrapping = TextWrapping.WordWrap;
+    textMachine.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    textMachine.setPadding("0%", "0%", "0%", "5%");
+    textMachine.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    textMachine.top = -150;
+    textMachine.text = "Equipment: " + element.name;
+    bioGrid.addControl(textMachine);
+
+
+
+
+    var textChart = new TextBlock("textDataChart");
+    textChart.width = 1;
+    textChart.height = 1;
+    textChart.fontSize = 26;
+    textChart.color = "black";
+    textChart.textWrapping = TextWrapping.WordWrap;
+    textChart.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    textChart.setPadding("0%", "0%", "0%", "5%");
+    textChart.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    textChart.top = -100;
+    textChart.text = "Min: 30ºC         Max: 46ºC       Avg: 36ºC";
+    bioGrid.addControl(textChart);
+
+
+    this.createChart(bioGrid);
+  }
+
+ 
+
+  createChart(bioGrid: Grid){
+    var plane = CreatePlane("plane", {width: 6, height: 6}, this.scene);
+      this.echartsScript.onload = () => {
+      const echartsCanvas = document.createElement("canvas");
+      echartsCanvas.width = 1024;
+      echartsCanvas.height = 1024;
+      echartsCanvas.style.width = echartsCanvas.width + "px";
+      echartsCanvas.style.height = echartsCanvas.height + "px";        
+
+      // Example chart from the echarts "Get Started" doc: https://echarts.apache.org/handbook/en/get-started/        
+      // Initialize the echarts instance based on the prepared dom
+      var myChart = echarts.init(echartsCanvas);
+
+      // Specify the configuration items and data for the chart
+      var option = {
+          title: {
+          text: 'ECharts Getting Started Example'
+          },
+          tooltip: {},
+          legend: {
+          data: ['sales']
+          },
+          xAxis: {
+          data: ['Shirts', 'Cardigans', 'Chiffons', 'Pants', 'Heels', 'Socks']
+          },
+          yAxis: {},
+          series: [
+          {
+              name: 'sales',
+              type: 'bar',
+              data: [5, 20, 36, 10, 10, 20]
+          }
+          ]
+      };
+
+      // Display the chart using the configuration items and data just specified.
+      myChart.setOption(option);
+
+      // Wait until the echarts canvas is rendered
+      myChart.on('finished', () => {
+          const echartsTexture = new DynamicTexture("echartsTexture", echartsCanvas, this.scene, true);
+          echartsTexture.update();
+
+          const echartsMaterial = new StandardMaterial("echartsMaterial", this.scene);
+          echartsMaterial.emissiveTexture = echartsTexture;
+          plane.material = echartsMaterial;
+                    
+          this.engine.hideLoadingUI();
+      });
+  };
+
   }
 
 }

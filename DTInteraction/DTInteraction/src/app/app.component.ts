@@ -5,6 +5,7 @@ import { AppComponentService } from './app.component.service';
 import { IDados } from './dados';
 import { IDadosERP } from './dadosERP';
 import { IDadosLote } from './dadosLote';
+import { IDadosEmployee } from './dataEmployee';
 import { IDadosLoteDB } from './IDadosLotesDB';
 
 @ViewChild('rendererCanvas', {static: true})
@@ -19,6 +20,7 @@ export class AppComponent implements OnInit {
   dados: IDadosERP[] = [];
   lotes: IDadosLote[] =[];
   lotesDB : IDadosLoteDB[] = [];
+  employees : IDadosEmployee[]=[];
   async ngOnInit(): Promise<void> {
 
     
@@ -39,7 +41,15 @@ export class AppComponent implements OnInit {
                 service.dataERPDBLote().subscribe({
                   next : dadosdblote => {
                     this.lotesDB = dadosdblote;
-                    service.startAll(this.reposta, this.dados,this.lotes,this.lotesDB);
+
+                    service.dataERPEmployee().subscribe({
+
+                      next: dadosEmployee => {
+                      this.employees=dadosEmployee;
+                      service.startAll(this.reposta, this.dados,this.lotes,this.lotesDB,this.employees);}
+
+                    })
+                    
 
                   }
                 })
