@@ -1,4 +1,5 @@
 export interface IDadosEmployee {
+    
 
     em_codigo: string;
     em_descritivo: string;
@@ -6,4 +7,5 @@ export interface IDadosEmployee {
     em_posy:number;
     em_posz:number;
     photo:string;
+    columns: string[];
 }
