@@ -1,12 +1,16 @@
 const mongoose = require('mongoose');
-
+// schema for the documents in the database
 var schema = new mongoose.Schema({
-    name : {
+    id : {
         type : String,
         required: true
+    },
+    model : {
+        type : Object,
+        required : true
     }
 })
 
-const Userdb = mongoose.model('user', schema,'sample');
+const Model = mongoose.model('model', schema);
 
-module.exports = Userdb;
+module.exports = Model;

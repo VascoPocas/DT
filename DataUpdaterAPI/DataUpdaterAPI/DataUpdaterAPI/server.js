@@ -2,6 +2,8 @@ const express = require('express');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
 const bodyparser = require("body-parser");
+const { route } = require('./server/routes/router');
+const { Router } = require('express');
 
 
 const app = express();

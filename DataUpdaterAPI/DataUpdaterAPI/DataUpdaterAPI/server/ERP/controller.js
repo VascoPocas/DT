@@ -17,7 +17,7 @@
  exports.find = (req, res)=>{
      if(req.params.id){
          const id = req.params.id;
-
+        // SQL query to get all the columns from a specific 
          connection.execSql(request); request = new Request("Select * FROM [DigitalTwin].[dbo].[users] WHERE Id ="+id+";", function(err) {
        
             if (err) {  

@@ -10,7 +10,7 @@ const controllerERP = require('../ERP/controller');
 
 /**
  *  @description for update the data in the ERP
- *  @method PUT /update-user
+ *  @method GET /update-erp data if needed
  */
 route.get('/update-ERP/', servicesERP.update_ERP)
 
@@ -24,7 +24,7 @@ route.get('/update-Sensor/',servicesSensor.update_Sensor)
 route.post('/api/erp/', controllerERP.create);
 
 // API Sensor vai só enviar os dados para dar update na bd
-route.get('/api/sensor/', controllerSensor.create);
+route.post('/api/sensor/', controllerSensor.create);
 
 
 

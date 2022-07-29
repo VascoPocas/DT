@@ -17,8 +17,6 @@ import { IDadosLoteDB } from './IDadosLotesDB';
 
 export class AppComponent implements OnInit {
   reposta: IDados[] = [];
-  dados: IDadosERP[] = [];
-  lotes: IDadosLote[] =[];
   lotesDB : IDadosLoteDB[] = [];
   employees : IDadosEmployee[]=[];
   async ngOnInit(): Promise<void> {
@@ -26,46 +24,35 @@ export class AppComponent implements OnInit {
     
     const service =  new AppComponentService(this.http);
 
-      service.dataERP().subscribe({
-        next : dadosERP => {
-          this.dados = dadosERP;
           service.dataBaseData().subscribe({
             next : dados => {
              
             this.reposta = dados;
-
-            service.dataERPLote().subscribe({
-              next: dadoslote => {
-                this.lotes = dadoslote;
 
                 service.dataERPDBLote().subscribe({
                   next : dadosdblote => {
                     this.lotesDB = dadosdblote;
 
                     service.dataERPEmployee().subscribe({
+                      next : dadosEmployee => {
+                        this.employees = dadosEmployee;
 
-                      next: dadosEmployee => {
-                      this.employees=dadosEmployee;
-                      service.startAll(this.reposta, this.dados,this.lotes,this.lotesDB,this.employees);}
+                          service.dataSensors().subscribe({
+                            next : dadosChart => {
+                              service.startAll(this.reposta,this.lotesDB,this.employees,dadosChart);
+                            }
+                          })
+
+                        }
+                      })
+                      
+                    }
 
                     })
                     
 
                   }
                 })
-                
-              }
-            })
-            
-       
-          }
-        })
-
-        }
-      })
-
-
-     
   }
   title = 'DTInteraction';
 

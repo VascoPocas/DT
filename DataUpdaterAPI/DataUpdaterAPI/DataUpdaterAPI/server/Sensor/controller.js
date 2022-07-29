@@ -1,3 +1,4 @@
+const Sensor = require("./sensor");
 
 // create and save new user
 exports.create = (req,res)=>{
@@ -18,10 +19,11 @@ exports.find = (req, res)=>{
     
         Userdb.findById(id)
             .then(data =>{
-               
+               // tries to dins 
                 if(!data){
                    
                     res.status(404).send({ message : "Not found user with id "+ id})
+                    return;
                 }else{
                     
                 

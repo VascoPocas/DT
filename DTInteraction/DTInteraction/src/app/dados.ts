@@ -1,16 +1,18 @@
 export interface IDados {
-    equipmentId: number;
-    name: string;
-    posX: number;
-    posY: number;
-    posZ:number;
-    direction:number;
-    seriesNumber: string;
-    model: string;
-    status: string;
-    brand: string;
-    manufacturer: string;
-    weight: number;
-    height: number;
+    equipmentId: string;
+    equipmentPositionX: number;
+    equipmentPositionY: number;
+    equipmentPositionZ:number;
+    equipmentDirection:number;
+    equipmentStatus: string;
+    equipmentName: string;
+    equipmentSeriesNumber: string;
+    equipmentModel: string;
+    sec_descritivo: string;
+    equipmentBrand: string;
+    equipmentManufacturer: string;
+    equipmentWeight: number;
+    equipmentHeight: number;
+    equipmentSection: string;
     columns: string[];
 }

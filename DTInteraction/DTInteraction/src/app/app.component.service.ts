@@ -21,7 +21,8 @@ import {
   Nullable,
   DynamicTexture,
   StandardMaterial,
-  CreatePlane} from '@babylonjs/core';
+  CreatePlane,
+  LayerSceneComponent} from '@babylonjs/core';
   import '@babylonjs/loaders';
   import { AdvancedDynamicTexture, Button, Control, Grid, GUI3DManager, HolographicSlate, Image, Rectangle, Slider, StackPanel, TextBlock, TextWrapping } from '@babylonjs/gui';
   import { HttpClient } from '@angular/common/http';
@@ -60,8 +61,6 @@ export class AppComponentService {
   isPicked: string | undefined = "";
   AnimationMeshes!: Animatable[];
   logoMesh!: any;
-  datasERP!: IDadosERP[];
-  dataLote!: IDadosLote[];
   controllers!: any[];
   _keys!: any[];
   keysLeft!: number[];
@@ -99,17 +98,19 @@ this.engine = new Engine(this.canvas, true, {
 
 
 
-async startAll(dados: IDados[], dadosERP: IDadosERP[], dadosLote : IDadosLote[], dadosLoteDb : IDadosLoteDB[],dadosEmp : IDadosEmployee[], dadosSensors : IDadosSensors[]){
-this.data=dados;
-this.datasERP = dadosERP;
-this.dataLote = dadosLote;
+async startAll(dados: IDados[], dadosLoteDb : IDadosLoteDB[],dadosEmp : IDadosEmployee[], dadosSensors : IDadosSensors[]){
+//saves the data into the arrays
+  this.data=dados;
 this.dataLoteDB = dadosLoteDb;
 this.dataEmployee = dadosEmp;
 this.dadosSensores = dadosSensors;
+//create the scenes
 this.scene = this.createScene(this.canvas);
 this.scene2 = this.createAxis();
 
-   
+
+// creation of the 3d models in to the scene
+this.createWarehouse(this.scene);
   this.data.forEach(element => {
     this.createEquipment(element,this.scene);
   }); 
@@ -119,7 +120,8 @@ this.scene2 = this.createAxis();
   this.dataEmployee.forEach(element => {
     this.createEmployee(element);
   })
-  this.createWarehouse(this.scene);
+
+  //Creation of the VR experience
 
   var  xrPromise = await this.scene.createDefaultXRExperienceAsync();
 
@@ -144,6 +146,7 @@ this.scene2 = this.createAxis();
      xrPromise.baseExperience.camera.position.y = 150;
       
   })
+  // when clicked the button exit the VR experience
      document.getElementById("buttonbox")!.addEventListener("click",function () {
        xrPromise.baseExperience.exitXRAsync();
      });
@@ -188,13 +191,13 @@ this.scene2 = this.createAxis();
 
     });
 
-
+    // this fucntion is used to detecct the mesh that was clicked
     this.scene.onPointerDown = async (evt) =>{
 
       this.ray = this.scene.createPickingRay( this.scene.pointerX, this.scene.pointerY, Matrix.Identity(), this.camera);
       this.hit=  this.scene.pickWithRay(this.ray);
       if (this.hit!.pickedMesh && this.hit!.pickedMesh.name != "Material2") {
-            
+          // creation of the Information for each type of mesh
           if(this.hit!.pickedMesh.metadata.type == "equipment"){
             this.lastMachine = this.hit!.pickedMesh;
             this.createSlateMachine(null);
@@ -241,9 +244,9 @@ const light = new HemisphericLight("light", new Vector3(1, 1, 0), scene);
 //camera.inputs.clear
 
 
-
+// creation of the navigation menu
 this.navigationMenu(scene);
-
+// camera inputs : scroll and keys 
 this.camera.inputs.removeByType("FreeCameraKeyboardMoveInput");
 this.camera.inputs.addMouseWheel(); 
 // Connect to camera:
@@ -289,7 +292,7 @@ navigationMenu = (scene: Scene) => {
     button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 
-    
+    // These pannel are used to change the orientation of each of the axis X,Y,Z
     var panel = new StackPanel();
     panel.width = "220px";
     panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -399,7 +402,7 @@ navigationMenu = (scene: Scene) => {
     
   
 }
-
+// this function creates the axis on the top right of the browser so we can seee the rotation
 createAxis =  () => {
  const  scene = new Scene(this.engine);
  scene.autoClear = false;
@@ -484,53 +487,45 @@ createAxis =  () => {
 
 }
 
-
+// Methods used to get the data from database
 
 dataBaseData() :Observable<IDados[]>{
- return this.http.get<IDados[]>('http://localhost:3000/api/sql/equipment').pipe(tap(data => console.log('All' + JSON.stringify(data))));
+ return this.http.get<IDados[]>('http://localhost:3000/api/sql/equipment').pipe();
  
-}
-
-dataERP() :Observable<IDadosERP[]>{
- return this.http.get<IDadosERP[]>('https://cft52.sistrade.com/api/recs').pipe(tap(data => console.log('All' + JSON.stringify(data))));
- 
-}
-
-dataERPLote() :Observable<IDadosLote[]>{
-  return this.http.get<IDadosLote[]>('https://cft52.sistrade.com/api/Lotes').pipe(tap(data => console.log('All' + JSON.stringify(data))));
-  
 }
 
 
 dataERPDBLote() :Observable<IDadosLoteDB[]>{
-  return this.http.get<IDadosLoteDB[]>('http://localhost:3000/api/sql/lotes').pipe(tap(data => console.log('All' + JSON.stringify(data))));
+  return this.http.get<IDadosLoteDB[]>('http://localhost:3000/api/sql/lotes').pipe();
   
 }
 
 dataERPEmployee() :Observable<IDadosEmployee[]>{
-  return this.http.get<IDadosEmployee[]>('https://cft52.sistrade.com/api/Employees').pipe(tap(data => console.log('All' + JSON.stringify(data))));
+  return this.http.get<IDadosEmployee[]>('http://localhost:3000/api/sql/employees').pipe();
   
 }
 
 dataSensors() :Observable<IDadosSensors[]>{
-  return this.http.get<IDadosSensors[]>('https://cft52.sistrade.com/api//Sensors?dataInicio=07-19-2022":14:00').pipe(tap(data => console.log('All' + JSON.stringify(data))));
+  return this.http.get<IDadosSensors[]>('http://localhost:3000/api/ts').pipe();
   
 }
 
-
+// create the 3dmodel for the warehouse
  async createWarehouse(scene : Scene): Promise<void> {
 
     // import the facility 
-    const { meshes } = await SceneLoader.ImportMeshAsync("","../assets/models/warehouse_building/","scene.gltf",scene);
+    const { meshes } = await SceneLoader.ImportMeshAsync("","../assets/models/idepa/","idepa.glb",scene);
     //ALL OBJECTS  
     var route = meshes[0];
     route.isPickable= false;
     route.name = "Material2";
-    route.position = new Vector3(860,0,1443);
+    
+    //route.position = new Vector3(860,0,1443);
   
 
 }
 
+// creates the 3d model for the equipment
 async createEquipment(numb : IDados,scene : Scene): Promise<void> {
   
     //imports the equipments
@@ -538,11 +533,11 @@ async createEquipment(numb : IDados,scene : Scene): Promise<void> {
     
     //ALL objects 
     meshes.meshes[0].getChildMeshes().forEach( m => { m.id = numb.equipmentId.toString();
-                                                m.metadata = {type:"equipment", x: numb.posX, y:numb.posY,z:numb.posZ}; });
+                                                m.metadata = {type:"equipment", x: numb.equipmentPositionX, y:numb.equipmentPositionY,z:numb.equipmentPositionZ}; });
     
     //var route= meshes.meshes[0].clone("equip",null);
-    meshes.meshes[0].scaling = new Vector3(.03,.03,.03);
-    this.datasERP.forEach( element => {
+    meshes.meshes[0].scaling = new Vector3(.0002,.0002,.0002);
+    this.data.forEach( element => {
       if (element.equipmentId == numb.equipmentId.toString()) {
         meshes.meshes[0].setAbsolutePosition(new Vector3(element.equipmentPositionX,element.equipmentPositionY,element.equipmentPositionZ));
         meshes.meshes[0].name = element.equipmentName;
@@ -553,8 +548,8 @@ async createEquipment(numb : IDados,scene : Scene): Promise<void> {
     meshes.meshes[0].isPickable= true;
     
     
-    if(numb.direction != null){
-    var rotation = Angle.FromDegrees(numb.direction).radians();
+    if(numb.equipmentDirection != null){
+    var rotation = Angle.FromDegrees(numb.equipmentDirection).radians();
     meshes.meshes[0].rotate(new Vector3(0,1,0),rotation,Space.LOCAL);
     } 
     
@@ -563,7 +558,7 @@ async createEquipment(numb : IDados,scene : Scene): Promise<void> {
 
 }
 
-
+// creates the information for the machine
 createSlateMachine(mesh : AbstractMesh | null) : void {
   var hitMesh: Nullable<AbstractMesh>;
         if (mesh != null) {
@@ -573,16 +568,16 @@ createSlateMachine(mesh : AbstractMesh | null) : void {
         }else{
           hitMesh  = this.hit!.pickedMesh;
         }
-      
+        // sees which mesh is the same as the one in the data and uses that information to create the slate
         this.data.forEach(async element => {
             
             if(element.equipmentId.toString() == hitMesh!.id && this.isPicked != hitMesh!.id){
               
-              var x = this.scene.animationGroups[Number.parseInt(hitMesh!.id)-1].isStarted;
-              if(x == true){
-                this.scene.animationGroups[Number.parseInt(hitMesh!.id)-1].stop();
+              //var x = this.scene.animationGroups[Number.parseInt(hitMesh!.id)-1].isStarted;
+              //if(x == true){
+                //this.scene.animationGroups[Number.parseInt(hitMesh!.id)-1].stop();
               
-              }
+              //}
               
               // resets the rotation and aspect of the slate so it can be right in front of the camera
               if(this.bioSlate.node == null){
@@ -590,8 +585,8 @@ createSlateMachine(mesh : AbstractMesh | null) : void {
                 
               }
 
-              var shown = [element.seriesNumber,element.model,element.status,element.brand,element.manufacturer,element.height,element.weight];
-
+              var shown = [element.equipmentSeriesNumber,element.equipmentModel,element.equipmentBrand,element.equipmentManufacturer,element.equipmentWeight,element.equipmentHeight];
+              console.log(shown);
               this.bioSlate.resetDefaultAspectAndPose(true);
               this.manager.addControl(this.bioSlate);
               this.bioSlate.dimensions = new Vector2(100, 100);
@@ -614,11 +609,43 @@ createSlateMachine(mesh : AbstractMesh | null) : void {
               bioText.setPadding("0%", "5%", "0%", "0%");
               bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
               bioText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-              bioText.text = element.name;
-              bioText.top = 50;
+              bioText.text = element.equipmentName;
+              bioText.top = 70;
 
               bioGrid.addControl(bioText);
-              for (let index = 6 ; index < element.columns.length; index++){
+
+              bioText = new TextBlock("bioText");
+                  bioText.width = 0.8;
+                  bioText.height = 0.1;
+                  bioText.color = "white";
+                  bioText.textWrapping = TextWrapping.WordWrap;
+                  bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+                  bioText.setPadding("0%", "5%", "0%", "5%");
+                  bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+                  bioText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+                  bioText.top = 50;
+                  bioText.text = "Status: ";
+  
+                  bioGrid.addControl(bioText);
+  
+                  bioText = new TextBlock("bioText");
+                  bioText.width = 0.2;
+                  bioText.height = 0.1;
+                  bioText.color = "white";
+                  bioText.textWrapping = TextWrapping.WordWrap;
+                  bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+                  bioText.setPadding("0%", "5%", "0%", "0%");
+                  bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+                  bioText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+                  bioText.top = 50;
+                  bioText.text = element.equipmentStatus;
+                  
+                  bioGrid.addControl(bioText);
+
+                element.columns = [ 'Series Number','Model','Brand','Manufacturer','Weight','Height']
+
+              for (let index = 0 ; index < element.columns.length; index++){
+                
                 const info = element.columns[index];
                 bioText = new TextBlock("bioText");
                 bioText.width = 0.4;
@@ -628,7 +655,7 @@ createSlateMachine(mesh : AbstractMesh | null) : void {
                 bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
                 bioText.setPadding("0%", "5%", "0%", "5%");
                 bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-                bioText.top = -100 + (index-6) * 50;
+                bioText.top = -80 + index * 50;
                 bioText.text = info + ":";
 
                 bioGrid.addControl(bioText);
@@ -641,10 +668,15 @@ createSlateMachine(mesh : AbstractMesh | null) : void {
                 bioText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
                 bioText.setPadding("0%", "5%", "0%", "0%");
                 bioText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-                bioText.top = -100 + (index-6) * 50;
-                bioText.text = shown[index-6].toString();
+                bioText.top = -80 + index* 50;
+                if(shown[index] == null)
+                bioText.text = "0";
+                else{
+                  bioText.text = shown[index].toString();
+                }
                 
                 bioGrid.addControl(bioText);
+                
               }
               
               bioGrid.background = "#4e5159";
@@ -655,17 +687,18 @@ createSlateMachine(mesh : AbstractMesh | null) : void {
               
               
               this.isPicked = hitMesh!.id;
-              
+              // this checks if the slate is already open and closes it 
             }else if (element.equipmentId.toString() == hitMesh!.id && this.isPicked == hitMesh!.id && mesh == null){
               
               this.isPicked="";
               this.bioSlate.dispose();
-              this.scene.animationGroups[Number.parseInt(hitMesh!.id)-1].play(true);
+              //this.scene.animationGroups[Number.parseInt(hitMesh!.id)-1].play(true);
             }
         });              
         
 }
 
+// method to create the 3d model for the lote
 async createLote(numb : IDadosLoteDB) {
   //imports the equipments
   const  meshes  = await SceneLoader.ImportMeshAsync("","../assets/models/cargo_crate/","scene.gltf",this.scene);
@@ -677,7 +710,7 @@ async createLote(numb : IDadosLoteDB) {
   
   var route = meshes.meshes[0];
   
-  this.dataLote.forEach( element => {
+  this.dataLoteDB.forEach( element => {
     if (element.art_codigo == numb.art_codigo.toString()) {
       route.setAbsolutePosition(new Vector3(element.arm_loc_pos_x,element.arm_loc_pos_y + 50,element.arm_loc_pos_z));
       route.name = element.art_descritivo;
@@ -688,11 +721,11 @@ async createLote(numb : IDadosLoteDB) {
 
 }
 
-
+// creates the information for the lote
 createSlateLote() : void {
 
     
-    
+      // checks which object is the one that was picked by the raypick and uses the information to create the slate
         this.dataLoteDB.forEach(async element => {
             
             if(element.art_codigo.toString() == this.hit!.pickedMesh?.id && this.isPicked != this.hit!.pickedMesh?.id){
@@ -774,6 +807,7 @@ createSlateLote() : void {
 
 }
 
+// create the 3d model for the employees
 async createEmployee(numb : IDadosEmployee) {
 //imports the equipments
 const  meshes  = await SceneLoader.ImportMeshAsync("","../assets/models/black_uniform_woman_employee/","scene.gltf",this.scene);
@@ -796,9 +830,11 @@ route.isPickable= true;
 
 }
 
+
+// create the info for the employee
 createSlateEmployee() {
       this.dataEmployee.forEach(async element => {
-                  
+        // checks which one was the picked by the raypick and uses the information for the creation of the slate
         if(element.em_codigo.toString() == this.hit!.pickedMesh?.id && this.isPicked != this.hit!.pickedMesh?.id){
 
           
@@ -885,6 +921,8 @@ createSlateEmployee() {
 
 }
 
+// this method creates the button for the slate in the machine information
+
 createButtons(bioGrid: Grid) {
 var textButton = new TextBlock("textButton");
 textButton.width = 1;
@@ -898,7 +936,7 @@ textButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
 textButton.verticalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
 textButton.text = "Information";
 
-
+// this button is for basic information about the equioment
 var bioButton = new Button("buttonInfo");
 bioButton.addControl(textButton);
 bioButton.width = 0.5;
@@ -918,7 +956,7 @@ bioButton.onPointerClickObservable.add( () =>{
 bioGrid.addControl(bioButton);
 
 
-
+// this button is for the data from the sensors recieved
 var textButton1 = new TextBlock("textButton");
 textButton1.width = 1;
 textButton1.height = 1;
@@ -952,8 +990,9 @@ bioGrid.addControl(bioBtn);
 
 }
 
+// create a chart so it can be visualizated in the Data section in the equipment slate
 createDataChart(bioGrid : Grid) {
-this.bioSlate.dimensions = new Vector2(200,200);
+this.bioSlate.dimensions = new Vector2(200,250);
 this.bioSlate.position.y+=100;
 this.bioSlate.content = bioGrid;
 var element!: IDados;
@@ -966,14 +1005,44 @@ this.data.forEach(elem => {
 var textMachine = new TextBlock("textDataChart");
 textMachine.width = 1;
 textMachine.height = 1;
-textMachine.fontSize = 36;
+textMachine.fontSize = 32;
 textMachine.color = "black";
 textMachine.textWrapping = TextWrapping.WordWrap;
 textMachine.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 textMachine.setPadding("0%", "0%", "0%", "5%");
 textMachine.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-textMachine.top = -150;
-textMachine.text = "Equipment: " + element.name;
+textMachine.top = -170;
+textMachine.text = "Equipment: " + element.equipmentName;
+bioGrid.addControl(textMachine);
+
+var textMachine = new TextBlock("textDataChart");
+textMachine.width = 1;
+textMachine.height = 1;
+textMachine.fontSize = 32;
+textMachine.color = "black";
+textMachine.textWrapping = TextWrapping.WordWrap;
+textMachine.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+textMachine.setPadding("0%", "0%", "0%", "5%");
+textMachine.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+textMachine.top = -125;
+textMachine.text = "Type: Temperature";
+bioGrid.addControl(textMachine);
+
+// last element of the array
+var last = this.dadosSensores[this.dadosSensores.length -1];
+// gets the day of the last element
+var day = last._time.split("T");
+var textMachine = new TextBlock("textDataChart");
+textMachine.width = 1;
+textMachine.height = 1;
+textMachine.fontSize = 30;
+textMachine.color = "black";
+textMachine.textWrapping = TextWrapping.WordWrap;
+textMachine.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+textMachine.setPadding("0%", "0%", "0%", "5%");
+textMachine.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+textMachine.top = -100;
+textMachine.text = "Day: " + day[0];
 bioGrid.addControl(textMachine);
 
 
@@ -990,8 +1059,8 @@ textChart.textWrapping = TextWrapping.WordWrap;
 textChart.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 textChart.setPadding("0%", "0%", "0%", "5%");
 textChart.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-textChart.top = -100;
-textChart.text = "Min: "+this.min+"ºC         Max: "+ this.max +"ºC       Avg: "+this.avg.toFixed(2)+"ºC";
+textChart.top = -70;
+textChart.text = "Min: "+this.min.toFixed(2) +"ºC         Max: "+ this.max.toFixed(2) +"ºC       Avg: "+this.avg.toFixed(2)+"ºC";
 bioGrid.addControl(textChart);
 
 
@@ -999,19 +1068,22 @@ bioGrid.addControl(textChart);
 }
 
 
-
+// creates the chart
 createChart(bioGrid: Grid){
+ 
+  // check for the max,min and avg 
   this.dadosSensores.forEach(elements => {
     
-    this.timeChart.push(elements.timestamp);
-    this.dataChart.push(elements.value);
-    if(this.max < elements.value){
-      this.max = elements.value;
+    this.timeChart.push(elements._time.split("T")[1].substring(0,8));
+    this.dataChart.push(elements._value);
+    if(this.max < elements._value){
+      this.max = elements._value;
     }
-    if(this.min > elements.value){
-      this.min = elements.value;
+    if(this.min > elements._value){
+      this.min = elements._value;
     }
-    this.avg = this.avg + elements.value;
+    this.avg = this.avg + elements._value;
+    console.log(this.avg);
   })
   this.avg = this.avg/ this.dadosSensores.length;
   var dataUrl;
@@ -1026,30 +1098,126 @@ createChart(bioGrid: Grid){
 
     // Example chart from the echarts "Get Started" doc: https://echarts.apache.org/handbook/en/get-started/        
     // Initialize the echarts instance based on the prepared dom
-    var myChart = echarts.init(echartsCanvas);
+    var myChart = echarts.init(echartsCanvas,"roma");
 
     // Specify the configuration items and data for the chart
     var option = {
-      xAxis: {
-        type: 'category',
-        data: this.timeChart
-      },
-      yAxis: {
-        type: 'value'
-      },
       series: [
         {
-          data: this.dataChart,
-          type: 'line',
-          smooth: true
+          type: 'gauge',
+          center: ['50%', '60%'],
+          startAngle: 200,
+          endAngle: -20,
+          min: 0,
+          max: 60,
+          splitNumber: 12,
+          itemStyle: {
+            color: '#FFAB91'
+          },
+          progress: {
+            show: true,
+            width: 30
+          },
+    
+          pointer: {
+            show: false
+          },
+          axisLine: {
+            lineStyle: {
+              width: 30
+            }
+          },
+          axisTick: {
+            distance: -45,
+            splitNumber: 5,
+            lineStyle: {
+              width: 2,
+              color: '#999'
+            }
+          },
+          splitLine: {
+            distance: -52,
+            length: 14,
+            lineStyle: {
+              width: 3,
+              color: '#999'
+            }
+          },
+          axisLabel: {
+            distance: -20,
+            color: '#999',
+            fontSize: 20
+          },
+          anchor: {
+            show: false
+          },
+          title: {
+            show: false
+          },
+          detail: {
+            valueAnimation: true,
+            width: '60%',
+            lineHeight: 40,
+            borderRadius: 8,
+            offsetCenter: [0, '-15%'],
+            fontSize: 60,
+            fontWeight: 'bolder',
+            formatter: '{value} °C',
+            color: 'auto'
+          },
+          data: [
+            {
+              value: 20
+            }
+          ]
+        },
+    
+        {
+          type: 'gauge',
+          center: ['50%', '60%'],
+          startAngle: 200,
+          endAngle: -20,
+          min: 0,
+          max: 60,
+          itemStyle: {
+            color: '#FD7347'
+          },
+          progress: {
+            show: true,
+            width: 8
+          },
+    
+          pointer: {
+            show: false
+          },
+          axisLine: {
+            show: false
+          },
+          axisTick: {
+            show: false
+          },
+          splitLine: {
+            show: false
+          },
+          axisLabel: {
+            show: false
+          },
+          detail: {
+            show: false
+          },
+          data: [
+            {
+              value: 0
+            }
+          ]
         }
       ]
     };
-
     // Display the chart using the configuration items and data just specified.
     myChart.setOption(option);
 
     // Wait until the echarts canvas is rendered
+    // used to update the chart every X seconds
     myChart.on('finished', () => {
      
         const echartsTexture = new DynamicTexture("echartsTexture", echartsCanvas, this.scene, true);
@@ -1058,16 +1226,46 @@ createChart(bioGrid: Grid){
         const echartsMaterial = new StandardMaterial("echartsMaterial", this.scene);
         echartsMaterial.emissiveTexture = echartsTexture;
         plane.material = echartsMaterial;
-       
-        dataUrl = echartsCanvas.toDataURL("image/jpeg",1);
-        console.log(dataUrl);
-        var img = new Image("img",dataUrl);
-        img.height = 0.6;
         
-        img.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+       
+        dataUrl = myChart.getDataURL({
+          pixelRatio: 1,
+          backgroundColor: '#fff'
+        });
+        var img = new Image("img",dataUrl);
+        
+        img.height = 0.7;
+        img.color = "white";
+        img.topInPixels = 150;
         bioGrid.addControl(img);
         
     });
+
+
+    setInterval( () => {
+      this.dataSensors().subscribe( { next : dadosSenso => {
+        var val = dadosSenso[0]._value;
+        myChart.setOption<echarts.EChartsOption>({
+          series: [
+            {
+              data: [
+                {
+                  value: val
+                }
+              ]
+            },
+            {
+              data: [
+                {
+                  value: val
+                }
+              ]
+            }
+          ]
+        });
+      }});
+      
+    }, 5000);
 
 }
 

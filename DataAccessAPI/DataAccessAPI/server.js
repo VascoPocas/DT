@@ -3,7 +3,8 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const bodyparser = require("body-parser");
 const path = require('path');
-
+const multer = require('multer');
+const upload = multer({ dest: "assets/"});
 const connectDB = require('./server/MONGO/connection');
 const connectDBTS =  require('./server/TS/connectionTS')
 const  connectDBSQL = require('./server/SQL/connectionSQL');
@@ -23,14 +24,10 @@ connectDBSQL();
 
 
 
-
+app.use(express.json());
 // parse request to body-parser
 app.use(bodyparser.urlencoded({ extended : true}))
 
-// set view engine
-//app.set("view engine", "html")
-app.use(express.static(__dirname +  '/views'));
-//app.set("views", path.resolve(__dirname, "views/ejs"))
 
 // load assets
 app.use('/css', express.static(path.resolve(__dirname, "assets/css")))

@@ -6,7 +6,7 @@ exports.homeRoutesTS = (req, res) => {
         .then(function(response){
             console.log(response.data)
             res.json(response.data)
-            res.render('index', { users : response.data });
+            
         })
         .catch(err =>{
             res.send(err);
